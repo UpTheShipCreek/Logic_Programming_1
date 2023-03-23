@@ -1,10 +1,8 @@
 head([H|_],H).
-
 tail(List,T):-
     reverse(List,Reverse),head(Reverse,T).
 
 sorted([_]):-!.
-
 sorted([E|List]):-
     head(List,H),
     E=<H,
@@ -14,11 +12,6 @@ sublist([],_).
 sublist(S,L):-
     append(S,_,L),
     S \= [].
-
-firstN(_,0,[]).
-firstN([E|L],N,[E|R]):-
-    succ(N0,N),
-    firstN(L,N0,R).
 
 final_state(State):-
     sorted(State).
