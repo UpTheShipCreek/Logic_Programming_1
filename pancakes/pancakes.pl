@@ -35,3 +35,30 @@ dfs(Initial,CurrentState,SoFarOperators,Operators,SoFarStates,States):-
 
 pancakes_dfs(Initial,Operators,States) :-
    dfs(Initial,Initial,[],Operators,[Initial],States).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+pancakes_ids(Initial,Operators,States):-
+    pancakes_ids_iter(Initial,Initial,0,[],Operators,[Initial],States).
+
+pancakes_ids_iter(Initial,Initial,Limit,[],Operators,[Initial],States):-
+    ids(Initial,Initial,Limit,[],Operators,[Initial],States),!.
+
+pancakes_ids_iter(Initial,Initial,Limit,[],Operators,[Initial],States):-
+    NLimit is Limit + 1,
+    pancakes_ids_iter(Initial,Initial,NLimit,[],Operators,[Initial],States).
+
+ids(Initial,State,Limit,Operators,Operators,States,States):-
+    final_state(State),!.
+
+ids(Initial,CurrentState,Limit,SoFarOperators,Operators,SoFarStates,States):-
+    length(SoFarOperators,Length), Length<Limit,
+     move(CurrentState,NewState,Operator),
+    \+member(NewState,SoFarStates),
+    append(SoFarStates,[NewState],NewSoFarStates),
+    append(SoFarOperators,[Operator],NewOperators),
+    ids(Initial,NewState,Limit,NewOperators,Operators,NewSoFarStates,States).
+
+
+
+
