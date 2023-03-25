@@ -10,7 +10,8 @@ sorted([E|List]):-
 
 sublist([],_).
 sublist(S,L):-
-    append(S,_,L),
+    append(_,L1,L),
+    append(S,_,L1),
     S \= [].
 
 final_state(State):-
@@ -41,8 +42,12 @@ pancakes_dfs(Initial,Operators,States) :-
 pancakes_ids(Initial,Operators,States):-
     pancakes_ids_iter(Initial,Initial,0,[],Operators,[Initial],States).
 
+pancakes_ids_found(Initial,Limit):-
+    ids(Initial,Initial,Limit,[],_,[Initial],_),!.
+
 pancakes_ids_iter(Initial,Initial,Limit,[],Operators,[Initial],States):-
-    ids(Initial,Initial,Limit,[],Operators,[Initial],States),!.
+    pancakes_ids_found(Initial,Limit),!,
+    ids(Initial,Initial,Limit,[],Operators,[Initial],States).
 
 pancakes_ids_iter(Initial,Initial,Limit,[],Operators,[Initial],States):-
     NLimit is Limit + 1,
