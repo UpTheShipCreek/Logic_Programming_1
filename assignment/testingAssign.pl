@@ -4,10 +4,6 @@ min(X,Y,Y):-
     X>=Y.
 min(X,Y,X):-
     X<Y.
-max(X,Y,X):-
-    X>=Y.
-max(X,Y,Y):-
-    X<Y.
 
 gatherActivities(AIds):-
     gatherActivities(AIds,[]),!.
@@ -22,7 +18,6 @@ pickWorker(W,N):-
     N>1,
     N0 is N - 1,
     pickWorker(W,N0).
-
 
 gatherWorkerActivities(_,[],[]).
 gatherWorkerActivities(PId,[AId-PId|Assigment],[AId|Activities]):-
@@ -46,14 +41,12 @@ assignment(NPersons,MaxHours,Assignment,Assignment):-
 assign([],_,_,[]).
 assign([AId|AIds], NPersons, MaxHours, [AId-PId|Assignment]) :-
     assign(AIds, NPersons, MaxHours, Assignment),
-    length([AId|AIds],L), %in the first assignation we only have 1 distinct option
-    max(L,1,L1),
-    min(NPersons,L1,M), %in the second two, in the third three and soon, up until our N
-    pickWorker(PId,M),
-    activity(AId, act(Ab, Ae)),
-    gatherWorkerActivities(PId, Assignment, APIds),
-    valid(Ab, Ae, APIds, MaxHours).
-
+    length([AId|AIds],L), %in the first assignation we have only 1 possible distinct option
+    min(NPersons,L,M), %in the second two, in the third three and soon, up until our N
+    pickWorker(PId,M), %so following the opposite direction, in the last and until our N
+    activity(AId, act(Ab, Ae)), %we have our N (max) assignations available, then N-1, N-2
+    gatherWorkerActivities(PId, Assignment, APIds), %which is the size of the "so-far" assignation list
+    valid(Ab, Ae, APIds, MaxHours). %until we reach an empty list
 
 valid(_,_,[],_).
 valid(Ab1,Ae1,[APId|APIds],MaxHours):-
@@ -61,21 +54,8 @@ valid(Ab1,Ae1,[APId|APIds],MaxHours):-
     Time is Ae1 - Ab1,
     OT is Hours + Time,
     OT =< MaxHours,
-    activity(APId,act(_,Ae2)),
-    Ab1 > Ae2,
+    activity(APId,act(Ab2,Ae2)),
+    (
+        Ab1 > Ae2; Ab2 > Ae1
+    ),
     valid(Ab1,Ae1,APIds,MaxHours).
-
-
-%assign(AIds,NPersons,MaxHours,Assignmnet):-
-%    assign(AIds,AIds,NPersons,MaxHours,[],Assignmnet).
-%assign(_,[],_,_,Assignment,Assignment):-!.
-% assign(AIds,[AId|Activities],NPersons,MaxHours,SoFarAssignments,Assigments):-
-%    length(SoFarAssignments,L),
-%    L1 is L + 1,
-%    min(NPersons,L1,M),
-%    pickWorker(PId,M),
-%   activity(AId,act(Ab,Ae)),
-%    gatherWorkerActivities(PId,SoFarAssignments,APIds),
-%    valid(Ab,Ae,APIds,MaxHours),
-%    assign(AIds,Activities,NPersons,MaxHours,[AId-PId|SoFarAssignments],Assigments).
-
