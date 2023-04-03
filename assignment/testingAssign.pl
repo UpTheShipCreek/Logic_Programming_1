@@ -39,23 +39,23 @@ assignment(NPersons,MaxHours,Assignment,Assignment):-
     assign(AIds,NPersons,MaxHours,Assignment).
 
 assign([],_,_,[]).
-assign([AId|AIds], NPersons, MaxHours, [AId-PId|Assignment]) :-
-    assign(AIds, NPersons, MaxHours, Assignment),
+assign([AId|AIds], NPersons, MaxTime, [AId-PId|Assignment]) :-
+    assign(AIds, NPersons, MaxTime, Assignment),
     length([AId|AIds],L), %in the first assignation we have only 1 possible distinct option
     min(NPersons,L,M), %in the second two, in the third three and soon, up until our N
     pickWorker(PId,M), %so following the opposite direction, in the last and until our N
     activity(AId, act(Ab, Ae)), %we have our N (max) assignations available, then N-1, N-2
     gatherWorkerActivities(PId, Assignment, APIds), %which is the size of the "so-far" assignation list
-    valid(Ab, Ae, APIds, MaxHours). %until we reach an empty list
+    NewTime is Ae - Ab, %until we reach an empty list
+    addTimes(APIds,SoFarTime),
+    OverallTime is NewTime + SoFarTime,
+    OverallTime =< MaxTime,
+    valid(Ab, Ae, APIds).
 
-valid(_,_,[],_).
-valid(Ab1,Ae1,[APId|APIds],MaxHours):-
-    addTimes([APId|APIds],Hours),
-    Time is Ae1 - Ab1,
-    OT is Hours + Time,
-    OT =< MaxHours,
+valid(_,_,[]).
+valid(Ab1,Ae1,[APId|APIds]):-
     activity(APId,act(Ab2,Ae2)),
     (
         Ab1 > Ae2; Ab2 > Ae1
     ),
-    valid(Ab1,Ae1,APIds,MaxHours).
+    valid(Ab1,Ae1,APIds).
