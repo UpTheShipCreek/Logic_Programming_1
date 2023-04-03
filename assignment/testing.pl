@@ -1,13 +1,13 @@
 head([H|_],H).
 
-min(X,Y,Y):-
+myMin(X,Y,Y):-
     X>=Y.
-min(X,Y,X):-
+myMin(X,Y,X):-
     X<Y.
 
-max(X,Y,X):-
+myMax(X,Y,X):-
     X>=Y.
-max(X,Y,Y):-
+myMax(X,Y,Y):-
     X<Y.
 
 gatherActivities(AIds):-
@@ -36,7 +36,7 @@ findMaxIndex(Assignment,Max):-
 
 findMaxIndex(_,[],Max,Max).
 findMaxIndex(As,[_-Index|Assignment],Temp,Max):-
-    max(Index,Temp,NT),
+    myMax(Index,Temp,NT),
     findMaxIndex(As,Assignment,NT,Max),!.
 
 addTimes(APIds,R):-addTimes(APIds,APIds,R,0).
@@ -64,9 +64,9 @@ assign(AIds,NPersons,MaxTime,Assignment):-
     assign(AIds,AIds,NPersons,MaxTime,[],Assignment).
 assign(_,[],_,_,Assignment,Assignment).
 assign(A,[AId|AIds],NPersons,MaxTime,SoFarAssignment,Assignment):-
-    findMaxIndex(SoFarAssignment,SoFarMax), %we must not assign the "(n+1)-nth" worker before the "n-nth", if we are to exclude mirror solutions. If we need someone different from the previous "(n-1)" workers, we shall always call him "n-nth".
+    findMaxIndex(SoFarAssignment,SoFarMax), %we must not assign the "(n+1)-nth" worker before the "n-nth", if we are to exclude mirror solutions. If we need someone different from the previous "(n-1)" workers, we shall always call him the "n-nth".
     succ(SoFarMax,S),
-    min(S,NPersons,M),
+    myMin(S,NPersons,M),
     pickWorker(PId,M),
     check(PId,AId,SoFarAssignment,MaxTime),
     assign(A,AIds,NPersons,MaxTime,[AId-PId|SoFarAssignment],Assignment).
