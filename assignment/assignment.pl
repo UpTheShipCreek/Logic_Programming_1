@@ -1,18 +1,14 @@
-activity(a01, act(0,3)).
-activity(a02, act(0,4)).
-activity(a03, act(1,5)).
-activity(a04, act(4,6)).
-activity(a05, act(6,8)).
-activity(a06, act(6,9)).
-activity(a07, act(9,10)).
-activity(a08, act(9,13)).
-activity(a09, act(11,14)).
-activity(a10, act(12,15)).
-activity(a11, act(14,17)).
-activity(a12, act(16,18)).
-activity(a13, act(17,19)).
-activity(a14, act(18,20)).
-activity(a15, act(19,20)).
+head([H|_],H).
+
+myMin(X,Y,Y):-
+    X>=Y.
+myMin(X,Y,X):-
+    X<Y.
+
+myMax(X,Y,X):-
+    X>=Y.
+myMax(X,Y,Y):-
+    X<Y.
 
 gatherActivities(AIds):-
     gatherActivities(AIds,[]),!.
@@ -35,20 +31,60 @@ gatherWorkerActivities(PId,[_-DId|Assigment],Activities):-
     PId =\= DId,
     gatherWorkerActivities(PId,Assigment,Activities),!.
 
-assignment(NPersons,Assignment):-
-    gatherActivities(AIds),
-    assign(AIds,NPersons,Assignment).
+findMaxIndex(Assignment,Max):-
+    findMaxIndex(Assignment,Assignment,0,Max).
 
-assign([],_,[]):-!.
-assign([AId|AIds],NPersons,[AId-PId|Assignment]):-
-    assign(AIds,NPersons,Assignment),
-    pickWorker(PId,NPersons),
-    activity(AId,act(Ab,Ae)),
-    gatherWorkerActivities(PId,Assignment,APIds),
-    valid(Ab,Ae,APIds). % Is current assignment consistent with previous ones
+findMaxIndex(_,[],Max,Max).
+findMaxIndex(As,[_-Index|Assignment],Temp,Max):-
+    myMax(Index,Temp,NT),
+    findMaxIndex(As,Assignment,NT,Max),!.
+
+addTimes(APIds,R):-addTimes(APIds,APIds,R,0).
+addTimes(_,[],R,R):-!.
+addTimes(APIds,[H|A],R,C):-
+    activity(H,act(Start,Finish)),
+    Time is Finish - Start,
+    NC is C + Time,
+    addTimes(APIds,A,R,NC).
+
+check(PId,AId,Assignment,MaxTime):-
+    activity(AId, act(Ab, Ae)),
+    gatherWorkerActivities(PId, Assignment, APIds),
+    NewTime is Ae - Ab,
+    addTimes(APIds,SoFarTime),
+    OverallTime is NewTime + SoFarTime,
+    OverallTime =< MaxTime,
+    valid(Ab, Ae, APIds).
+
+toASPFormatList(ASA, N, List) :-
+    findall(X, toASPFormat(ASA, N, X), List).
+
+toASPFormat(ASA,N,ASP):-
+    pickWorker(W,N),
+    gatherWorkerActivities(W,ASA,Activities),
+    addTimes(Activities,Time),
+    ASP = W-Activities-Time.
+
+assignment(NPersons,MaxTime,ASP,ASA):-
+    gatherActivities(AIds),
+    assign(AIds,NPersons,MaxTime,ASA),
+    toASPFormatList(ASA,NPersons,ASP).
+
+assign(AIds,NPersons,MaxTime,Assignment):-
+    assign(AIds,AIds,NPersons,MaxTime,[],Assignment).
+assign(_,[],_,_,Assignment,Assignment).
+assign(A,[AId|AIds],NPersons,MaxTime,SoFarAssignment,Assignment):-
+    findMaxIndex(SoFarAssignment,SoFarMax), %we must not assign the "(n+1)-nth" worker before the "n-nth", if we are to exclude mirror solutions. If we need someone different from the previous "(n-1)" workers, we shall always call him the "n-nth".
+    succ(SoFarMax,S),
+    myMin(S,NPersons,M),
+    pickWorker(PId,M),
+    check(PId,AId,SoFarAssignment,MaxTime),
+    assign(A,AIds,NPersons,MaxTime,[AId-PId|SoFarAssignment],Assignment).
 
 valid(_,_,[]).
 valid(Ab1,Ae1,[APId|APIds]):-
     activity(APId,act(Ab2,Ae2)),
-    Ab1 >= Ae2+1,
-    valid(Ab1,Ae1,APIds),!.
+    (
+        Ab1 > Ae2; Ab2 > Ae1
+    ),
+    valid(Ab1,Ae1,APIds).
