@@ -56,9 +56,19 @@ check(PId,AId,Assignment,MaxTime):-
     OverallTime =< MaxTime,
     valid(Ab, Ae, APIds).
 
-assignment(NPersons,MaxTime,Assignment,Assignment):-
+toASPFormatList(ASA, N, List) :-
+    findall(X, toASPFormat(ASA, N, X), List).
+
+toASPFormat(ASA,N,ASP):-
+    pickWorker(W,N),
+    gatherWorkerActivities(W,ASA,Activities),
+    addTimes(Activities,Time),
+    ASP = W-Activities-Time.
+
+assignment(NPersons,MaxTime,ASP,ASA):-
     gatherActivities(AIds),
-    assign(AIds,NPersons,MaxTime,Assignment).
+    assign(AIds,NPersons,MaxTime,ASA),
+    toASPFormatList(ASA,NPersons,ASP).
 
 assign(AIds,NPersons,MaxTime,Assignment):-
     assign(AIds,AIds,NPersons,MaxTime,[],Assignment).
