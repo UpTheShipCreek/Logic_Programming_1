@@ -8,6 +8,11 @@ not_inst(X):-       %instatiation check
    \+(\+(X=0)),
    \+(\+(X=1)).
 
+index(_, [], _):-fail.
+index(Element,[Element|_],1).
+index(Element,[_|List],Index):-
+  index(Element,List,Index0),succ(Index0,Index).
+
 mergesort([], []).
 mergesort([A], [A]).
 mergesort([A, B | Rest], S) :-
@@ -120,12 +125,11 @@ vertical_slots(L,List,C):-
 %%%%%%%%%%%%%%%%% Block_Manipulation %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%% Word_Manipulation %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-words_to_lengths(Match):-
-    words(Words),words_to_lengths_h(Words,Match).
+words_to_lengths(Matches):-   %Creates a list of duplets of form (Length,Word)
+    words(Words),words_to_lengths_h(Words,Matches).
 words_to_lengths_h([],[]).
 words_to_lengths_h([Word|Words],[(L,Word)|Lengths]):-
     name(Word,List),length(List,L),words_to_lengths_h(Words,Lengths).
@@ -134,10 +138,32 @@ extract_words_from_match([],[]).
 extract_words_from_match([(_,Word)|Matches],[Word|Words]):-
     extract_words_from_match(Matches,Words).
 
-short_words_by_length(Sorted_Words):-words_to_lengths(Matches),mergesort(Matches,Sorted_Matches),extract_words_from_match(Sorted_Matches,Sorted_Words),!.
+short_words_by_length(Sorted_Words):-   %Sorts words by decreasing length order
+    words_to_lengths(Matches),
+    mergesort(Matches,Sorted_Matches),
+    extract_words_from_match(Sorted_Matches,Sorted_Words),!.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%% Word_Manipulation %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+extract_slots_from_matches([],[]).
+extract_slots_from_matches([M|Matches],[S|Slots]):-
+    M = (_,S),
+    extract_slots_from_matches(Matches,Slots).
+
+match_word_to_slot(Word,Slot,Match,AlreadyMatched):-
+    name(Word,List),
+    length(List,Length),length(Slot,Length),
+    match_helper(List,Slot,Match,AlreadyMatched).
+match_helper([],[],[],_).
+match_helper([Letter|Letters],[Slot|Slots],[(Letter,Slot)|Matches],AlreadyMatched):-
+    extract_slots_from_matches(AlreadyMatched,AMSlots)
+    \+index(Slot,AMSlots,_),
+    match_helper(Letters,Slots,Matches).
+match_helper([Letter|Letters],[Slot|Slots],[Match|Matches],AlreadyMatched):-
+    extract_slots_from_matches(AlreadyMatched,AMSlots)
+    index(Slot,AMSlots,Index),
+    index(Match,AlreadyMatched,Index),
+    match_helper(Letters,Slots,Matches).
 
 
 
