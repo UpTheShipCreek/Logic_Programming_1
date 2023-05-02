@@ -1,5 +1,3 @@
-:-debug.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%% General_Purpose %%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -76,59 +74,51 @@ white(Row,Column):- %Finds all white blocks or checks if a block is white
     block(Row,Column),
     \+black(Row,Column).
 
-
 cont_h(white(X,Y),white(X,Y1)):-
     succ(Y,Y1).
 
 cont_v(white(X,Y),white(X1,Y)):-
     succ(X,X1).
 
-find_cont(List,ListoLists):-
-    find_cont(List,List,[],ListoLists).
-    
-find_cont(_,[],ListoLists,ListoLists).
-find_cont(_,[W],[],[]):- \+head(W,_).
-find_cont(List,[W],[HLL|RLL],ListoLists):-
-   length(HLL,Length1),Length1>0,
+find_cont_h(List,ListoLists):-
+    find_cont_h(List,List,[],ListoLists).
+find_cont_h(_,[],ListoLists,ListoLists).
+find_cont_h(_,[W],[],[]):- \+head(W,_).
+find_cont_h(List,[W],[HLL|RLL],ListoLists):-
+   length(HLL,Length),Length>0,
    reverse(HLL,THLL),head(THLL,Previous_W),(
-   cont_h(Previous_W,W),append(HLL,[W],NewHLL),find_cont(List,[],[NewHLL|RLL],ListoLists);
-   \+cont_h(Previous_W,W),find_cont(List,[],[[W]|[HLL|RLL]],ListoLists)).
-find_cont(List,[W|RWhites],[],ListoLists):-
+   cont_h(Previous_W,W),append(HLL,[W],NewHLL),find_cont_h(List,[],[NewHLL|RLL],ListoLists);
+   \+cont_h(Previous_W,W),find_cont_h(List,[],[[W]|[HLL|RLL]],ListoLists)).
+find_cont_h(List,[W|RWhites],[],ListoLists):-
     length(RWhites,Length),Length>0,head(RWhites,Next_W),(
-    cont_h(W,Next_W),find_cont(List,RWhites,[[W]],ListoLists);
-    \+cont_h(W,Next_W),find_cont(List,RWhites,[],ListoLists)).
-find_cont(List,[W|RWhites],[HLL|RLL],ListoLists):-
+    cont_h(W,Next_W),find_cont_h(List,RWhites,[[W]],ListoLists);
+    \+cont_h(W,Next_W),find_cont_h(List,RWhites,[],ListoLists)).
+find_cont_h(List,[W|RWhites],[HLL|RLL],ListoLists):-
     length(HLL,Length1),Length1>0,length(RWhites,Length2),Length2>0,
     head(RWhites,Next_W),reverse(HLL,THLL),head(THLL,Previous_W),(
-    cont_h(Previous_W,W),append(HLL,[W],NewHLL),find_cont(List,RWhites,[NewHLL|RLL],ListoLists);
-    \+cont_h(Previous_W,W),cont_h(W,Next_W),find_cont(List,RWhites,[[W]|[HLL|RLL]],ListoLists);
-    \+cont_h(Previous_W,W),\+cont_h(W,Next_W),find_cont(List,RWhites,[HLL|RLL],ListoLists)).
+    cont_h(Previous_W,W),append(HLL,[W],NewHLL),find_cont_h(List,RWhites,[NewHLL|RLL],ListoLists);
+    \+cont_h(Previous_W,W),cont_h(W,Next_W),find_cont_h(List,RWhites,[[W]|[HLL|RLL]],ListoLists);
+    \+cont_h(Previous_W,W),\+cont_h(W,Next_W),find_cont_h(List,RWhites,[HLL|RLL],ListoLists)).
 
-find_cont_h([],[[]]). %tries to break the list of all possible slots into continuous sublists aka words
-find_cont_h([X,Y],[[X,Y|L]|R]):-
-   cont_h(X,Y),
-   find_cont_h([],[L|R]),!.
-find_cont_h([X,Y|T],[[X|L]|R]):-
-   length(T,Length),Length>0,
-   cont_h(X,Y),
-   find_cont_h([Y|T],[L|R]).
-find_cont_h([X,Y],[[X]]):-
-   \+cont_h(X,Y),
-   find_cont_h([],[[]]).
-find_cont_h([X,Y|T],[H|R]):-
-   length(T,Length),Length>0,
-   \+cont_h(X,Y),reverse(H,Reverse),head(Reverse,OH),(
-   cont_h(OH,X)->append(X,NH,H),find_cont_h([Y|T],[NH|R]);
-   \+cont_h(OH,X)->find_cont_h([Y|T],[H|R])).
-
-find_cont_v([],[]). %tries to break the list of all possible slots into continuous sublists aka words
-find_cont_v([_],[]).
-find_cont_v([X,Y|T],[[X|L]|R]):-
-   cont_v([X,Y]),
-   find_cont_v([Y|T],[L|R]).
-find_cont_v([X,Y|T],[[X]|R]):-
-   \+cont_v([X,Y]),
-   find_cont_v([Y|T],R).
+find_cont_v(List,ListoLists):-
+    find_cont_v(List,List,[],ListoLists).
+find_cont_v(_,[],ListoLists,ListoLists).
+find_cont_v(_,[W],[],[]):- \+head(W,_).
+find_cont_v(List,[W],[HLL|RLL],ListoLists):-
+   length(HLL,Length),Length>0,
+   reverse(HLL,THLL),head(THLL,Previous_W),(
+   cont_v(Previous_W,W),append(HLL,[W],NewHLL),find_cont_v(List,[],[NewHLL|RLL],ListoLists);
+   \+cont_v(Previous_W,W),find_cont_v(List,[],[[W]|[HLL|RLL]],ListoLists)).
+find_cont_v(List,[W|RWhites],[],ListoLists):-
+    length(RWhites,Length),Length>0,head(RWhites,Next_W),(
+    cont_v(W,Next_W),find_cont_v(List,RWhites,[[W]],ListoLists);
+    \+cont_v(W,Next_W),find_cont_v(List,RWhites,[],ListoLists)).
+find_cont_v(List,[W|RWhites],[HLL|RLL],ListoLists):-
+    length(HLL,Length1),Length1>0,length(RWhites,Length2),Length2>0,
+    head(RWhites,Next_W),reverse(HLL,THLL),head(THLL,Previous_W),(
+    cont_v(Previous_W,W),append(HLL,[W],NewHLL),find_cont_v(List,RWhites,[NewHLL|RLL],ListoLists);
+    \+cont_v(Previous_W,W),cont_v(W,Next_W),find_cont_v(List,RWhites,[[W]|[HLL|RLL]],ListoLists);
+    \+cont_v(Previous_W,W),\+cont_v(W,Next_W),find_cont_v(List,RWhites,[HLL|RLL],ListoLists)).
 
 horizontal_slots(List):-dimension(N),horizontal_slots(List,[],N). %creates a list including all the viable slots aka white blocks
 horizontal_slots(List,List,0):-!.
@@ -146,10 +136,35 @@ vertical_slots(L,List,C):-
     succ(C0,C),
     vertical_slots(L,[R|List],C0).
 
+h_wordslots(WordSlots):- %Getting the lists of slot lists and extracting the slots for all the horizontal words
+    horizontal_slots(Lists),h_wordslots(WordSlots,[],Lists,Lists),!.
+h_wordslots(WordSlots,WordSlots,[],_).
+h_wordslots(WordSlots,T,[E|L],List):-
+    find_cont_h(E,H),append(H,T,N),h_wordslots(WordSlots,N,L,List).
+
+v_wordslots(WordSlots):- %Getting the lists of slot lists and extracting the slots for all the vertical words
+    vertical_slots(Lists),v_wordslots(WordSlots,[],Lists,Lists),!.
+v_wordslots(WordSlots,WordSlots,[],_).
+v_wordslots(WordSlots,T,[E|L],List):-
+    find_cont_v(E,H),append(H,T,N),v_wordslots(WordSlots,N,L,List).
+
 slots(List):-
-    horizontal_slots(H_Slots),vertical_slots(V_Slots),
-    find_cont_h(H_Slots,HW_Slots),find_cont_v(V_Slots,HV_Slots),
-    append(HW_Slots,HV_Slots,List).
+    h_wordslots(HW_Slots),v_wordslots(VW_Slots),
+    append(HW_Slots,VW_Slots,List).
+
+x_symbolism(ListoWhites,ListoX):-
+   dimension(D),
+   x_symbolism(ListoWhites,ListoWhites,[],ListoX,D).
+x_symbolism(_,[],ListoX,ListoX,_):-!.
+x_symbolism(ListoWhites,[white(Row,Column)|RLoW],SoFarListoX,ListoX,D):-
+   N is Column + (D*(Row-1)),append(SoFarListoX,[x(N)],New),
+   x_symbolism(ListoWhites,RLoW,New,ListoX,D).
+
+x_s(XLists):-slots(WLists),x_s(WLists,XLists).
+x_s([],[]).
+x_s([WL|ListoWLists],[XL|ListoXLists]):-
+   x_symbolism(WL,XL),
+   x_s(ListoWLists,ListoXLists).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%% Block_Manipulation %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,48 +178,52 @@ words_to_lengths_h([],[]).
 words_to_lengths_h([Word|Words],[(L,Word)|Lengths]):-
     name(Word,List),length(List,L),words_to_lengths_h(Words,Lengths).
 
-extract_words_from_match([],[]).
-extract_words_from_match([(_,Word)|Matches],[Word|Words]):-
-    extract_words_from_match(Matches,Words).
+extract_words_from_matches([],[]).
+extract_words_from_matches([(_,Word)|Matches],[Word|Words]):-
+    extract_words_from_matches(Matches,Words).
 
 short_words_by_length(Sorted_Words):-   %Sorts words by decreasing length order
     words_to_lengths(Matches),
     mergesort(Matches,Sorted_Matches),
-    extract_words_from_match(Sorted_Matches,Sorted_Words),!.
+    extract_words_from_matches(Sorted_Matches,Sorted_Words),!.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%% Word_Manipulation %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-extract_slots_from_matches([],[]).
-extract_slots_from_matches([M|Matches],[S|Slots]):-
-    M = (_,S),
-    extract_slots_from_matches(Matches,Slots).
-match_word_to_slot(Word,Slot,Match,AlreadyMatched):-
-    name(Word,List),
-    length(List,Length),length(Slot,Length),
-    word_to_slot_helper(List,Slot,Match,AlreadyMatched).
-word_to_slot_helper([],[],[],_).
-word_to_slot_helper([Letter|Letters],[Slot|Slots],[(Letter,Slot)|Matches],AlreadyMatched):-
-    extract_slots_from_matches(AlreadyMatched,AMSlots),
-    \+index(Slot,AMSlots,_),    %try to match a whole word only if it doesn't have any slot already matched
-    word_to_slot_helper(Letters,Slots,Matches,AlreadyMatched).
-word_to_slot_helper([Letter|Letters],[Slot|Slots],[(Letter,Slot)|Matches],AlreadyMatched):-
-    extract_slots_from_matches(AlreadyMatched,AMSlots),
-    index(Slot,AMSlots,Index),    %if a slot is already matched, make sure that you are trying to match the same letter to that slot
-    index((Letter,_),AlreadyMatched,Index),
-    word_to_slot_helper(Letters,Slots,Matches,AlreadyMatched).
-
-find_valid_match(Word,[Slot|Slots],Match,AlreadyMatched):-
-    match_word_to_slot(Word,Slot,Match,AlreadyMatched);
-    (\+match_word_to_slot(Word,Slot,_,AlreadyMatched),find_valid_match(Word,Slots,Match,AlreadyMatched)).
-
 crossword(Solution):-
+    match_words_to_slots(Solution).
+
+match_words_to_slots(Matches):-
     short_words_by_length(Words),
     slots(Slots),
-    crossword(Solution,Words,Words,Slots,[]).
+    match_words_to_slots(Words,Slots,[],Matches).
 
-crossword(Solution,_,[],_,[],Solution).
-crossword(Solution,Words,[W|RW],Slots,AlreadyMatched):-
-    find_valid_match(W,Slots,M,AlreadyMatched),
-    crossword(Solution,Words,RW,Slots,[M|AlreadyMatched]).
+% Predicate to match words to slots
+match_words_to_slots([],[],Matches,Matches):-!.
+match_words_to_slots([Word|Words],Slots,SoFarMatches,Matches) :-
+    % Check if the word can fit into the slot
+    find_fit(Word,Slots,(Word,Slot)),
+    delete(Slot,Slots,NewSlots),
+    % Print the matched word and slot
+    write(Word), write(' fits into '), write(Slot), nl,
+    append(SoFarMatches,[(Word,Slot)],NM),
+    % Recurse with the remaining words and slots
+    match_words_to_slots(Words,NewSlots,NM, Matches).
+
+find_fit(Word,[Slot|Slots],Fit):-
+    fits(Word,Slot), Fit = (Word,Slot);
+    find_fit(Word,Slots,Fit).
 
 
+fits(Word, Slot) :-     %Fit a word into a slot
+    name(Word,WList),
+    length(Slot,L),
+    length(S,L),    %create an empty list of the same length, so as to be able to assign and check more easily
+    length(WList, L),
+    fits_chars(WList, S),!.
+
+% Helper predicate to check if each character in a word fits into a corresponding slot character
+fits_chars([], []).
+fits_chars([Char|RWord], [Slot|Slots]) :-
+    (var(Slot) ; Slot = Char),      %if the slot is assigned it needs to have the same value as the character we were about to assign it, the problem is this                              
+    fits_chars(RWord, Slots).       %ready made solution only works if I was actually making the matches on the spot, which would be kinda neat if I was doing that
+                                    %maybe I need to work with empty lists the whole way and only relate them to their actual slots at the top level.                         
