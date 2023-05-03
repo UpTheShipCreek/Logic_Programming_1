@@ -13,6 +13,9 @@ index(Element,[Element|_],1).
 index(Element,[_|List],Index):-
   index(Element,List,Index0),succ(Index0,Index).
 
+zip([], [], []).
+zip([X|Xs], [Y|Ys], [(X,Y)|Zs]) :- zip(Xs,Ys,Zs).
+
 mergesort([], []).
 mergesort([A], [A]).
 mergesort([A, B | Rest], S) :-
@@ -189,41 +192,53 @@ short_words_by_length(Sorted_Words):-   %Sorts words by decreasing length order
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%% Word_Manipulation %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+fill_alrdy_matched([],_,[],[]).
+fill_alrdy_matched([Slot|Slots],Matches,[(Letter,Slot)|F],Rest):- %the matches list needs to be flat
+    member((Letter,Slot),Matches),fill_alrdy_matched(Slots,Matches,F,Rest),!.
+fill_alrdy_matched([Slot|Slots],Matches,F,[Slot|Rest]):- %the matches list needs to be flat
+    \+member((_,Slot),Matches),fill_alrdy_matched(Slots,Matches,F,Rest),!.
+
+
 crossword(Solution):-
     match_words_to_slots(Solution).
 
-match_words_to_slots(Matches):-
+match_words_to_slots(Matches):- % Matches = [[(112, x(4)), (105, x(9)), (114, x(14)), (117, x(19)), (115, x(24))],...]
     short_words_by_length(Words),
-    slots(Slots),
+    x_s(Slots),
     match_words_to_slots(Words,Slots,[],Matches).
 
 % Predicate to match words to slots
 match_words_to_slots([],[],Matches,Matches):-!.
-match_words_to_slots([Word|Words],Slots,SoFarMatches,Matches) :-
+match_words_to_slots([Word|Words],Slots,SoFarMatches,Matches) :- 
     % Check if the word can fit into the slot
-    find_fit(Word,Slots,(Word,Slot)),
+    flatten(SoFarMatches,FlatMatches),
+    find_fit(Word,Slots,(Word,Slot),FlatMatches),
+    name(Word,LName),
+    zip(LName,Slot,M),
     delete(Slot,Slots,NewSlots),
     % Print the matched word and slot
-    write(Word), write(' fits into '), write(Slot), nl,
-    append(SoFarMatches,[(Word,Slot)],NM),
+    %write(Word), write(' fits into '), write(Slot), nl,
+    append(SoFarMatches,[M],NM),
     % Recurse with the remaining words and slots
-    match_words_to_slots(Words,NewSlots,NM, Matches).
+    match_words_to_slots(Words,NewSlots,NM,Matches),!.
 
-find_fit(Word,[Slot|Slots],Fit):-
-    fits(Word,Slot), Fit = (Word,Slot);
-    find_fit(Word,Slots,Fit).
+find_fit(Word,[Slot|Slots],Fit,FlatMatches):-
+    fits(Word,Slot,FlatMatches), Fit = (Word,Slot);
+    find_fit(Word,Slots,Fit,FlatMatches).
 
-
-fits(Word, Slot) :-     %Fit a word into a slot
+fits(Word, Slot,FlatMatches) :-     %Fit a word into a slot
     name(Word,WList),
     length(Slot,L),
-    length(S,L),    %create an empty list of the same length, so as to be able to assign and check more easily
+    %length(S,L),    %create an empty list of the same length, so as to be able to assign and check more seemlessly
     length(WList, L),
-    fits_chars(WList, S),!.
+    fits_chars(WList,Slot,FlatMatches),!.
+    %fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),
+    %fits_chars(WList,Slot,FlatMatches,AlMatches,Rest),!.
 
 % Helper predicate to check if each character in a word fits into a corresponding slot character
-fits_chars([], []).
-fits_chars([Char|RWord], [Slot|Slots]) :-
-    (var(Slot) ; Slot = Char),      %if the slot is assigned it needs to have the same value as the character we were about to assign it, the problem is this                              
-    fits_chars(RWord, Slots).       %ready made solution only works if I was actually making the matches on the spot, which would be kinda neat if I was doing that
+fits_chars(Word,Slot,FlatMatches):-fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),fits_chars(Word,Slot,AlMatches,Rest).
+fits_chars([],[],_,_).
+fits_chars([Char|RWord],[Slot|Slots],AlMatches,Rest):-
+    (member(Slot,Rest); (member((MatchedChar,Slot),AlMatches),MatchedChar == Char)),      %if the slot is assigned it needs to have the same value as the character we were about to assign it, the problem is this                              
+    fits_chars(RWord,Slots,AlMatches,Rest),!.       %ready made solution only works if I was actually making the matches on the spot, which would be kinda neat if I was doing that
                                     %maybe I need to work with empty lists the whole way and only relate them to their actual slots at the top level.                         
