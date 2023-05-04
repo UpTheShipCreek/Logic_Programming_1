@@ -153,7 +153,8 @@ v_wordslots(WordSlots,T,[E|L],List):-
 
 slots(List):-
     h_wordslots(HW_Slots),v_wordslots(VW_Slots),
-    append(HW_Slots,VW_Slots,List).
+    reverse(HW_Slots,R_Hor), reverse(VW_Slots,R_Ver),
+    append(R_Hor,R_Ver,List).
 
 x_symbolism(ListoWhites,ListoX):-
    dimension(D),
@@ -199,7 +200,8 @@ fill_alrdy_matched([Slot|Slots],Matches,F,[Slot|Rest]):- %the matches list needs
     \+member((_,Slot),Matches),fill_alrdy_matched(Slots,Matches,F,Rest),!.
 
 crossword(Solution2):-
-    match_words_to_slots(_,Solution2).
+    match_words_to_slots(_,S2),
+    reverse(S2,Solution2).
 
 match_words_to_slots(Matches,Word_Slots):- % Matches = [[(112, x(4)), (105, x(9)), (114, x(14)), (117, x(19)), (115, x(24))],...]
     short_words_by_length(Words),
@@ -208,25 +210,25 @@ match_words_to_slots(Matches,Word_Slots):- % Matches = [[(112, x(4)), (105, x(9)
 
 % Predicate to match words to slots
 match_words_to_slots([],[],Matches,Matches,WS,WS):-!.
-match_words_to_slots([Word|Words],Slots,SoFarMatches,Matches,SoFarWS,Word_Slots) :- 
+match_words_to_slots(Words,[Slot|Slots],SoFarMatches,Matches,SoFarWS,Word_Slots) :- 
     % Check if the word can fit into the slot
-    flatten(SoFarMatches,FlatMatches), %flatten the already matched slots so you can easily search through it 
-    find_fit(Word,Slots,(Word,Slot),FlatMatches),
+    flatten(SoFarMatches,FlatMatches),
+    find_fit(Words,Slot,(Word,Slot),FlatMatches),
     name(Word,LName),
     zip(LName,Slot,M),
-    %delete(Word,Words,NWords),
-    delete(Slot,Slots,NewSlots),
+    delete(Word,Words,NWords),
+    %delete(Slot,Slots,NewSlots),
     % Print the matched word and slot
     %write(Word), write(' fits into '), write(Slot), nl,
     append(SoFarMatches,[M],NM),
     % Recurse with the remaining words and slots
-    match_words_to_slots(Words,NewSlots,NM,Matches,[(Word,Slot)|SoFarWS],Word_Slots),!.
+    match_words_to_slots(NWords,Slots,NM,Matches,[(Word,Slot)|SoFarWS],Word_Slots),!.
 
-find_fit(Word,[Slot|Slots],Fit,FlatMatches):-
+find_fit([Word|Words],Slot,Fit,FlatMatches):-
     fits(Word,Slot,FlatMatches), Fit = (Word,Slot);
-    find_fit(Word,Slots,Fit,FlatMatches).
+    find_fit(Words,Slot,Fit,FlatMatches).
 
-fits(Word,Slot,FlatMatches) :-     %Fit a word into a slot
+fits(Word, Slot,FlatMatches) :-     %Fit a word into a slot
     name(Word,WList),
     length(Slot,L),
     %length(S,L),    %create an empty list of the same length, so as to be able to assign and check more seemlessly
@@ -235,6 +237,7 @@ fits(Word,Slot,FlatMatches) :-     %Fit a word into a slot
     %fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),
     %fits_chars(WList,Slot,FlatMatches,AlMatches,Rest),!.
 
+% Helper predicate to check if each character in a word fits into a corresponding slot character
 fits_chars(Word,Slot,FlatMatches):-fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),fits_chars(Word,Slot,AlMatches,Rest).
 fits_chars([],[],_,_).
 fits_chars([Char|RWord],[Slot|Slots],AlMatches,Rest):-
