@@ -154,20 +154,6 @@ v_wordslots(WordSlots,T,[E|L],List):-
 slots(List):-
     h_wordslots(HW_Slots),v_wordslots(VW_Slots),
     append(HW_Slots,VW_Slots,List).
-
-x_symbolism(ListoWhites,ListoX):-
-   dimension(D),
-   x_symbolism(ListoWhites,ListoWhites,[],ListoX,D).
-x_symbolism(_,[],ListoX,ListoX,_):-!.
-x_symbolism(ListoWhites,[white(Row,Column)|RLoW],SoFarListoX,ListoX,D):-
-   N is Column + (D*(Row-1)),append(SoFarListoX,[x(N)],New),
-   x_symbolism(ListoWhites,RLoW,New,ListoX,D).
-
-x_s(XLists):-slots(WLists),x_s(WLists,XLists).
-x_s([],[]).
-x_s([WL|ListoWLists],[XL|ListoXLists]):-
-   x_symbolism(WL,XL),
-   x_s(ListoWLists,ListoXLists).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%% Block_Manipulation %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,21 +175,77 @@ short_words_by_length(Sorted_Words):-   %Sorts words by decreasing length order
     words_to_lengths(Matches),
     mergesort(Matches,Sorted_Matches),
     extract_words_from_matches(Sorted_Matches,Sorted_Words),!.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%% Word_Manipulation %%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-fill_alrdy_matched([],_,[],[]).
+
+fill_alrdy_matched([],_,[],[]). %creates two lists with the matches that seperates all the slots to two lists, a list that contains every slot filled and a list that contains the rest
 fill_alrdy_matched([Slot|Slots],Matches,[(Letter,Slot)|F],Rest):- %the matches list needs to be flat
     member((Letter,Slot),Matches),fill_alrdy_matched(Slots,Matches,F,Rest),!.
 fill_alrdy_matched([Slot|Slots],Matches,F,[Slot|Rest]):- %the matches list needs to be flat
     \+member((_,Slot),Matches),fill_alrdy_matched(Slots,Matches,F,Rest),!.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%% Word_Manipulation %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-crossword(Solution2):-
-    match_words_to_slots(_,Solution2).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% Formatting&Prints %%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+format_solution(Word_Slots,Word_List):-     %Turn a list of a elements of the form (Word,Slot) to a sorted version of the word list
+    length(Word_Slots,Length),
+    length(Word_List,Length),
+    h_wordslots(HW_Slots),v_wordslots(VW_Slots),
+    reverse(HW_Slots,Horizontal),reverse(VW_Slots,Vertical),
+    length(HW_Slots,L),
+    %x_s(Horizontal,H),x_s(Vertical,V),
+    %format_solution(Word_Slots,Word_Slots,Word_List,H,V,L).
+    format_solution(Word_Slots,Word_Slots,Word_List,Horizontal,Vertical,L),!.
 
-match_words_to_slots(Matches,Word_Slots):- % Matches = [[(112, x(4)), (105, x(9)), (114, x(14)), (117, x(19)), (115, x(24))],...]
-    short_words_by_length(Words),
-    x_s(Slots),
+format_solution(_,[],_,_,_,_).
+format_solution(Word_Slots,[(Word,Slot)|Rest],Word_List,H,V,L):-
+    ((index(Slot,H,Index),index(Word,Word_List,Index)); %if the slot is horizontal, then the index on the slot array is the index of the word in the word array
+    (index(Slot,V,Index),I is Index + L, index(Word,Word_List,I))), %if the slot is vertical, then the index of the word in the word array is the index of the slot plus the number of horizontal words before it
+    format_solution(Word_Slots,Rest,Word_List,H,V,L).
+
+grid(Grid):-dimension(N),grid(Grid,[],N),!.
+grid(Grid,Grid,N):-length(Grid,N).
+grid(Grid,SoFarGrid,N):-
+    length(Column,N),
+    grid(Grid,[Column|SoFarGrid],N).
+
+fill_grid(ToPrint,Grid):-
+    fill_grid(ToPrint,ToPrint,Grid),!.
+fill_grid(_,[],_).
+fill_grid(ToPrint,[(Letter,white(R,C))|Rest],Grid):-
+    name(L,[Letter]),
+    index(Row,Grid,R),
+    index(L,Row,C),
+    fill_grid(ToPrint,Rest,Grid).
+
+print_crossword(ToPrint):-
+    flatten(ToPrint,Flat),
+    grid(Grid),
+    fill_grid(Flat,Grid),
+    print_grid(Grid).
+
+print_grid(Grid):-
+    print_grid_rows(Grid).
+print_grid_rows([]).
+print_grid_rows([Row|Rows]) :- print_grid_row(Row), nl, print_grid_rows(Rows).
+print_grid_row([]).
+print_grid_row([X|Xs]) :- (var(X)-> write('###') ; write(' '),write(X),write(' ')), print_grid_row(Xs).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% Formatting&Prints %%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+crossword(F):-
+    match_words_to_slots(ToPrint,Solution),
+    format_solution(Solution,F),
+    print_crossword(ToPrint).
+
+match_words_to_slots(Matches,Word_Slots):-  % Matches = [[(112, x(4)), (105, x(9)), (114, x(14)), (117, x(19)), (115, x(24))],...]
+    short_words_by_length(Words),           %Word_Slots= [(word,[x4,x9,x14,x19,x24])...]
+    slots(Slots),
     match_words_to_slots(Words,Slots,[],Matches,[],Word_Slots).
 
 % Predicate to match words to slots
@@ -216,8 +258,6 @@ match_words_to_slots([Word|Words],Slots,SoFarMatches,Matches,SoFarWS,Word_Slots)
     zip(LName,Slot,M),
     %delete(Word,Words,NWords),
     delete(Slot,Slots,NewSlots),
-    % Print the matched word and slot
-    %write(Word), write(' fits into '), write(Slot), nl,
     append(SoFarMatches,[M],NM),
     % Recurse with the remaining words and slots
     match_words_to_slots(Words,NewSlots,NM,Matches,[(Word,Slot)|SoFarWS],Word_Slots),!.
@@ -238,6 +278,28 @@ fits(Word,Slot,FlatMatches) :-     %Fit a word into a slot
 fits_chars(Word,Slot,FlatMatches):-fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),fits_chars(Word,Slot,AlMatches,Rest).
 fits_chars([],[],_,_).
 fits_chars([Char|RWord],[Slot|Slots],AlMatches,Rest):-
-    (member(Slot,Rest); (member((MatchedChar,Slot),AlMatches),MatchedChar == Char)),      %if the slot is assigned it needs to have the same value as the character we were about to assign it, the problem is this                              
-    fits_chars(RWord,Slots,AlMatches,Rest),!.       %ready made solution only works if I was actually making the matches on the spot, which would be kinda neat if I was doing that
-                                    %maybe I need to work with empty lists the whole way and only relate them to their actual slots at the top level.                         
+    (member(Slot,Rest); (member((MatchedChar,Slot),AlMatches),MatchedChar == Char)), %if a slot is assigned a character make sure it matches, else just assign it                          
+    fits_chars(RWord,Slots,AlMatches,Rest),!.                         
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%% Main %%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%% Trash %%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+x_symbolism(ListoWhites,ListoX):-
+   dimension(D),
+   x_symbolism(ListoWhites,ListoWhites,[],ListoX,D).
+x_symbolism(_,[],ListoX,ListoX,_):-!.
+x_symbolism(ListoWhites,[white(Row,Column)|RLoW],SoFarListoX,ListoX,D):-
+   N is Column + (D*(Row-1)),append(SoFarListoX,[x(N)],New),
+   x_symbolism(ListoWhites,RLoW,New,ListoX,D).
+
+x_s(XLists):-slots(WLists),x_s(WLists,XLists).
+x_s([],[]).
+x_s([WL|ListoWLists],[XL|ListoXLists]):-
+   x_symbolism(WL,XL),
+   x_s(ListoWLists,ListoXLists).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%% Trash %%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
