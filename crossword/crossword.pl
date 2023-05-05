@@ -91,14 +91,14 @@ find_cont_h(List,[W],[HLL|RLL],ListoLists):-
    length(HLL,Length),Length>0,
    reverse(HLL,THLL),head(THLL,Previous_W),(
    cont_h(Previous_W,W),append(HLL,[W],NewHLL),find_cont_h(List,[],[NewHLL|RLL],ListoLists);
-   \+cont_h(Previous_W,W),find_cont_h(List,[],[[W]|[HLL|RLL]],ListoLists)).
+   \+cont_h(Previous_W,W),find_cont_h(List,[],[HLL|RLL],ListoLists)).
 find_cont_h(List,[W|RWhites],[],ListoLists):-
     length(RWhites,Length),Length>0,head(RWhites,Next_W),(
     cont_h(W,Next_W),find_cont_h(List,RWhites,[[W]],ListoLists);
     \+cont_h(W,Next_W),find_cont_h(List,RWhites,[],ListoLists)).
 find_cont_h(List,[W|RWhites],[HLL|RLL],ListoLists):-
     length(HLL,Length1),Length1>0,length(RWhites,Length2),Length2>0,
-    head(RWhites,Next_W),reverse(HLL,THLL),head(THLL,Previous_W),(
+    head(RWhites,Next_W),reverse(HLL,THLL),head(THLL,Previous_W),( % finding the next and previous whites for comparison
     cont_h(Previous_W,W),append(HLL,[W],NewHLL),find_cont_h(List,RWhites,[NewHLL|RLL],ListoLists);
     \+cont_h(Previous_W,W),cont_h(W,Next_W),find_cont_h(List,RWhites,[[W]|[HLL|RLL]],ListoLists);
     \+cont_h(Previous_W,W),\+cont_h(W,Next_W),find_cont_h(List,RWhites,[HLL|RLL],ListoLists)).
@@ -111,7 +111,7 @@ find_cont_v(List,[W],[HLL|RLL],ListoLists):-
    length(HLL,Length),Length>0,
    reverse(HLL,THLL),head(THLL,Previous_W),(
    cont_v(Previous_W,W),append(HLL,[W],NewHLL),find_cont_v(List,[],[NewHLL|RLL],ListoLists);
-   \+cont_v(Previous_W,W),find_cont_v(List,[],[[W]|[HLL|RLL]],ListoLists)).
+   \+cont_v(Previous_W,W),find_cont_v(List,[],[HLL|RLL],ListoLists)).
 find_cont_v(List,[W|RWhites],[],ListoLists):-
     length(RWhites,Length),Length>0,head(RWhites,Next_W),(
     cont_v(W,Next_W),find_cont_v(List,RWhites,[[W]],ListoLists);
@@ -228,9 +228,14 @@ print_crossword(ToPrint):-
 print_grid(Grid):-
     print_grid_rows(Grid).
 print_grid_rows([]).
-print_grid_rows([Row|Rows]) :- print_grid_row(Row), nl, print_grid_rows(Rows).
+print_grid_rows([Row|Rows]):- 
+    print_grid_row(Row), nl, 
+    print_grid_rows(Rows).
 print_grid_row([]).
-print_grid_row([X|Xs]) :- (var(X)-> write('###') ; write(' '),write(X),write(' ')), print_grid_row(Xs).
+print_grid_row([X|Xs]) :- 
+    (var(X)-> write('###'); 
+    write(' '),write(X),write(' ')),
+    print_grid_row(Xs).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%% Formatting&Prints %%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,7 +248,7 @@ crossword(F):-
     format_solution(Solution,F),
     print_crossword(ToPrint).
 
-match_words_to_slots(Matches,Word_Slots):-  % Matches = [[(112, x(4)), (105, x(9)), (114, x(14)), (117, x(19)), (115, x(24))],...]
+match_words_to_slots(Matches,Word_Slots):-  % Matches = [[(112, x(4)), (105, x(9)), (114, x(14)), (117, x(19)), (115, x(24))],...], (ended up using the white(Row,Column) format instead of the x(N))
     short_words_by_length(Words),           %Word_Slots= [(word,[x4,x9,x14,x19,x24])...]
     slots(Slots),
     match_words_to_slots(Words,Slots,[],Matches,[],Word_Slots).
@@ -275,7 +280,9 @@ fits(Word,Slot,FlatMatches) :-     %Fit a word into a slot
     %fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),
     %fits_chars(WList,Slot,FlatMatches,AlMatches,Rest),!.
 
-fits_chars(Word,Slot,FlatMatches):-fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),fits_chars(Word,Slot,AlMatches,Rest).
+fits_chars(Word,Slot,FlatMatches):-
+    fill_alrdy_matched(Slot,FlatMatches,AlMatches,Rest),
+    fits_chars(Word,Slot,AlMatches,Rest).
 fits_chars([],[],_,_).
 fits_chars([Char|RWord],[Slot|Slots],AlMatches,Rest):-
     (member(Slot,Rest); (member((MatchedChar,Slot),AlMatches),MatchedChar == Char)), %if a slot is assigned a character make sure it matches, else just assign it                          
